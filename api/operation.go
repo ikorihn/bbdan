@@ -18,6 +18,26 @@ type Operation struct {
 	update bool
 }
 
+type OperationType string
+
+const (
+	OperationTypeAdd    = "add"
+	OperationTypeRemove = "remove"
+	OperationTypeUpdate = "update"
+)
+
+func NewOperationFromPermission(p Permission, operationType OperationType) Operation {
+	return Operation{
+		objectId:        p.ObjectId,
+		objectName:      p.ObjectName,
+		objectType:      p.ObjectType,
+		permissionAfter: p.Permission,
+		add:             operationType == OperationTypeAdd,
+		remove:          operationType == OperationTypeRemove,
+		update:          operationType == OperationTypeUpdate,
+	}
+}
+
 func (o Operation) Same() bool {
 	return !o.add && !o.update && !o.remove
 }
