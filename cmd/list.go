@@ -1,8 +1,11 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
+	"net/http"
 
+	"github.com/ikorihn/bbdan/api"
 	"github.com/spf13/cobra"
 )
 
@@ -12,20 +15,46 @@ var listCmd = &cobra.Command{
 	Short: "List permissions of a bitbucket repository",
 	Args:  cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("list called", args[0], args[1])
+		workspace := args[0]
+		repository := args[1]
+		fmt.Printf("List permissions for %s/%s\n", workspace, repository)
+
+		hc := http.DefaultClient
+
+		username, err := cmd.Flags().GetString("username")
+		if err != nil {
+			fmt.Printf("%v", err)
+			return
+		}
+		password, err := cmd.Flags().GetString("password")
+		if err != nil {
+			fmt.Printf("%v", err)
+			return
+		}
+		ba := api.NewBitbucketApi(hc, username, password)
+		permissions, err := ba.ListPermission(context.Background(), workspace, repository)
+		if err != nil {
+			fmt.Printf("%v", err)
+			return
+		}
+
+		fmt.Println("==== RESULT ====")
+		fmt.Println("type, id, name, permission")
+		for _, v := range permissions {
+			fmt.Printf("%s, %s, %s, %s\n",
+				v.ObjectType,
+				v.ObjectId,
+				v.ObjectName,
+				v.Permission,
+			)
+		}
 	},
 }
 
 func init() {
 	permissionCmd.AddCommand(listCmd)
 
-	// Here you will define your flags and configuration settings.
+	listCmd.Flags().StringP("username", "u", "YOUR NAME", "Help message for toggle")
+	listCmd.Flags().StringP("password", "p", "YOUR PASSWORD", "Help message for toggle")
 
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// listCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// listCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -20,16 +21,12 @@ type BitbucketApi struct {
 
 func NewBitbucketApi(
 	hc *http.Client,
-	baseUrl string,
 	username string,
 	password string,
 ) *BitbucketApi {
-	if baseUrl == "" {
-		baseUrl = urlBitbucketApi
-	}
 	return &BitbucketApi{
 		hc:       hc,
-		baseUrl:  baseUrl,
+		baseUrl:  urlBitbucketApi,
 		username: username,
 		password: password,
 	}
@@ -82,15 +79,50 @@ type bitbucketUser struct {
 }
 
 type bitbucketGroup struct {
-	Type                    string `json:"type"`
-	Owner                   string `json:"owner"`
-	Workspace               string `json:"workspace"`
-	Slug                    string `json:"slug"`
-	FullSlug                string `json:"full_slug"`
-	Name                    string `json:"name"`
-	DefaultPermission       string `json:"default_permission"`
-	EmailForwardingDisabled string `json:"email_forwarding_disabled"`
-	AccountPrivilege        string `json:"account_privilege"`
+	Type     string `json:"type"`
+	Slug     string `json:"slug"`
+	FullSlug string `json:"full_slug"`
+	Name     string `json:"name"`
+}
+
+func (ba BitbucketApi) do(ctx context.Context, url string) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.SetBasicAuth(ba.username, ba.password)
+
+	res, err := ba.hc.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	defer res.Body.Close()
+
+	b, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if res.StatusCode >= 400 {
+		type httpErr struct {
+			Error map[string]string `json:"error"`
+		}
+		var e httpErr
+		err = json.Unmarshal(b, &e)
+		if err != nil {
+			e = httpErr{
+				Error: map[string]string{
+					"message": "unknown",
+				},
+			}
+		}
+
+		return nil, fmt.Errorf("http request error: %v, %v", res.Status, e)
+	}
+
+	return b, nil
 }
 
 func (ba *BitbucketApi) ListPermission(ctx context.Context, workspace, repository string) ([]Permission, error) {
@@ -101,15 +133,23 @@ func (ba *BitbucketApi) ListPermission(ctx context.Context, workspace, repositor
 	endpoint = endpoint.JoinPath("repositories", workspace, repository, "permissions-config")
 
 	endpointPermissionGroup := endpoint.JoinPath("groups")
+	res, err := ba.do(ctx, endpointPermissionGroup.String())
+	if err != nil {
+		return nil, err
+	}
 	var groupPermission values[repositoryPermissionGroup]
-	err = ba.do(ctx, endpointPermissionGroup.String(), groupPermission)
+	err = json.Unmarshal(res, &groupPermission)
 	if err != nil {
 		return nil, err
 	}
 
 	endpointPermissionUser := endpoint.JoinPath("users")
+	res, err = ba.do(ctx, endpointPermissionUser.String())
+	if err != nil {
+		return nil, err
+	}
 	var userPermission values[repositoryPermissionUser]
-	err = ba.do(ctx, endpointPermissionUser.String(), userPermission)
+	err = json.Unmarshal(res, &userPermission)
 	if err != nil {
 		return nil, err
 	}
@@ -136,30 +176,4 @@ func (ba *BitbucketApi) ListPermission(ctx context.Context, workspace, repositor
 
 	return permissions, nil
 
-}
-
-func (ba BitbucketApi) do(ctx context.Context, url string, v any) error {
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-	if err != nil {
-		return err
-	}
-
-	res, err := ba.hc.Do(req)
-	if err != nil {
-		return err
-	}
-
-	defer res.Body.Close()
-
-	b, err := io.ReadAll(res.Body)
-	if err != nil {
-		return err
-	}
-
-	err = json.Unmarshal(b, &v)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
