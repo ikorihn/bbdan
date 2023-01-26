@@ -1,6 +1,7 @@
 package api
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -194,4 +195,42 @@ func (ba *BitbucketApi) ListPermission(ctx context.Context, workspace, repositor
 
 	return permissions, nil
 
+}
+
+func (ba *BitbucketApi) CopyPermission(ctx context.Context, workspace, repository string, operations []Operation) error {
+	for _, v := range operations {
+		endpoint := ""
+		switch {
+		case v.update, v.add:
+			if v.objectType == ObjectTypeUser {
+				endpoint = fmt.Sprintf(endpointPermissionConfigUser, workspace, repository, v.objectId)
+			} else {
+				endpoint = fmt.Sprintf(endpointPermissionConfigGroup, workspace, repository, v.objectId)
+			}
+
+			body, err := json.Marshal(map[string]string{
+				"permission": string(v.permissionAfter),
+			})
+			if err != nil {
+				return err
+			}
+			_, err = ba.do(ctx, endpoint, "PUT", bytes.NewBuffer(body))
+			if err != nil {
+				return err
+			}
+
+		case v.remove:
+			if v.objectType == ObjectTypeUser {
+				endpoint = fmt.Sprintf(endpointPermissionConfigUser, workspace, repository, v.objectId)
+			} else {
+				endpoint = fmt.Sprintf(endpointPermissionConfigGroup, workspace, repository, v.objectId)
+			}
+			_, err := ba.do(ctx, endpoint, "DELETE", nil)
+			if err != nil {
+				return err
+			}
+
+		}
+	}
+	return nil
 }
