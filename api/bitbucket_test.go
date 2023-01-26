@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestBitbucketApi_CopyPermission(t *testing.T) {
+func TestBitbucketApi_UpdatePermissions(t *testing.T) {
 	type args struct {
 		workspace  string
 		repository string
@@ -173,7 +173,7 @@ func TestBitbucketApi_CopyPermission(t *testing.T) {
 				password: "pass",
 			}
 			ctx := context.Background()
-			err := ba.CopyPermission(ctx, tt.args.workspace, tt.args.repository, tt.args.operations)
+			err := ba.UpdatePermissions(ctx, tt.args.workspace, tt.args.repository, tt.args.operations)
 			assert.NoError(t, err)
 		})
 	}

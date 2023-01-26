@@ -69,7 +69,7 @@ var copyCmd = &cobra.Command{
 			selectedOperations = append(selectedOperations, operations[v])
 		}
 
-		err = ba.CopyPermission(ctx, workspace, targetRepository, selectedOperations)
+		err = ba.UpdatePermissions(ctx, workspace, targetRepository, selectedOperations)
 		if err != nil {
 			fmt.Printf("Copy failed: %v\n", err)
 			return err

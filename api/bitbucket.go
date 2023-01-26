@@ -153,6 +153,7 @@ func (ba BitbucketApi) do(ctx context.Context, endpoint, method string, body io.
 	return b, nil
 }
 
+// ListPermission gets permissions for a repository.
 func (ba *BitbucketApi) ListPermission(ctx context.Context, workspace, repository string) ([]Permission, error) {
 	res, err := ba.do(ctx, fmt.Sprintf(endpointPermissionConfigGroups, workspace, repository), "GET", nil)
 	if err != nil {
@@ -197,7 +198,8 @@ func (ba *BitbucketApi) ListPermission(ctx context.Context, workspace, repositor
 
 }
 
-func (ba *BitbucketApi) CopyPermission(ctx context.Context, workspace, repository string, operations []Operation) error {
+// UpdatePermissions updates permissions of a repository according to operations.
+func (ba *BitbucketApi) UpdatePermissions(ctx context.Context, workspace, repository string, operations []Operation) error {
 	for _, v := range operations {
 		endpoint := ""
 		switch {
