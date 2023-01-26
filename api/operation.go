@@ -18,6 +18,10 @@ type Operation struct {
 	update bool
 }
 
+func (o Operation) Same() bool {
+	return !o.add && !o.update && !o.remove
+}
+
 func (o Operation) Message() string {
 	switch {
 	case o.update:

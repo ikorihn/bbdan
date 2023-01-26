@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/AlecAivazis/survey/v2"
 	"github.com/ikorihn/bbdan/api"
 	"github.com/spf13/cobra"
 )
@@ -49,48 +48,18 @@ var copyCmd = &cobra.Command{
 		}
 
 		operations := api.MakeOperationList(srcPermissions, targetPermissions)
-		messages := make([]string, 0)
-		for _, v := range operations {
-			messages = append(messages, v.Message())
-		}
-		prompt := &survey.MultiSelect{
-			Message: "Choose operations:",
-			Options: messages,
-		}
-
-		selectedIdx := []int{}
-		err = survey.AskOne(prompt, &selectedIdx)
+		selectedOperations, err := askOperation(operations)
 		if err != nil {
-			fmt.Printf("Prompt failed %v\n", err)
 			return err
-		}
-		selectedOperations := make([]api.Operation, 0)
-		for _, v := range selectedIdx {
-			selectedOperations = append(selectedOperations, operations[v])
 		}
 
 		err = ba.UpdatePermissions(ctx, workspace, targetRepository, selectedOperations)
 		if err != nil {
-			fmt.Printf("Copy failed: %v\n", err)
+			fmt.Printf("Failed to update: %v\n", err)
 			return err
 		}
 
-		afterCopied, err := ba.ListPermission(ctx, workspace, targetRepository)
-		if err != nil {
-			return err
-		}
-
-		fmt.Println("==== RESULT ====")
-		fmt.Println("type, id, name, permission")
-		for _, v := range afterCopied {
-			fmt.Printf("%s, %s, %s, %s\n",
-				v.ObjectType,
-				v.ObjectId,
-				v.ObjectName,
-				v.Permission,
-			)
-		}
-
+		showPermissions(ba, workspace, targetRepository)
 		return nil
 	},
 }
