@@ -53,8 +53,4 @@ var listCmd = &cobra.Command{
 
 func init() {
 	permissionCmd.AddCommand(listCmd)
-
-	listCmd.Flags().StringP("username", "u", "YOUR NAME", "Help message for toggle")
-	listCmd.Flags().StringP("password", "p", "YOUR PASSWORD", "Help message for toggle")
-
 }

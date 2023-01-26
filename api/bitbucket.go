@@ -11,6 +11,13 @@ import (
 
 const urlBitbucketApi = "https://api.bitbucket.org/2.0"
 
+const (
+	endpointPermissionConfigUsers  = "/repositories/%s/%s/permissions-config/users"
+	endpointPermissionConfigGroups = "/repositories/%s/%s/permissions-config/groups"
+	endpointPermissionConfigUser   = "/repositories/%s/%s/permissions-config/users/%s"
+	endpointPermissionConfigGroup  = "/repositories/%s/%s/permissions-config/groups/%s"
+)
+
 type BitbucketApi struct {
 	hc *http.Client
 
@@ -54,8 +61,23 @@ type Permission struct {
 	Permission PermissionType
 }
 
-type values[T any] struct {
-	Values []T `json:"values"`
+// APIレスポンス
+
+// errorResponse
+type errorResponse struct {
+	Type  string     `json:"type"`
+	Error errorField `json:"error"`
+}
+type errorField struct {
+	Fields  map[string]string `json:"fields,omitempty"`
+	Message string            `json:"message"`
+}
+
+type response[T any] struct {
+	Values  []T     `json:"values"`
+	Pagelen int     `json:"pagelen"`
+	Size    int     `json:"size"`
+	Next    *string `json:"next,omitempty"`
 }
 
 type repositoryPermissionUser struct {
@@ -85,13 +107,21 @@ type bitbucketGroup struct {
 	Name     string `json:"name"`
 }
 
-func (ba BitbucketApi) do(ctx context.Context, url string) ([]byte, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+func (ba BitbucketApi) do(ctx context.Context, endpoint, method string, body io.Reader) ([]byte, error) {
+	u, err := url.Parse(ba.baseUrl + endpoint)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, method, u.String(), body)
 	if err != nil {
 		return nil, err
 	}
 
 	req.SetBasicAuth(ba.username, ba.password)
+	if body != nil {
+		req.Header.Add("Content-Type", "application/json")
+	}
 
 	res, err := ba.hc.Do(req)
 	if err != nil {
@@ -106,15 +136,12 @@ func (ba BitbucketApi) do(ctx context.Context, url string) ([]byte, error) {
 	}
 
 	if res.StatusCode >= 400 {
-		type httpErr struct {
-			Error map[string]string `json:"error"`
-		}
-		var e httpErr
+		var e errorResponse
 		err = json.Unmarshal(b, &e)
 		if err != nil {
-			e = httpErr{
-				Error: map[string]string{
-					"message": "unknown",
+			e = errorResponse{
+				Error: errorField{
+					Message: string(b),
 				},
 			}
 		}
@@ -126,29 +153,20 @@ func (ba BitbucketApi) do(ctx context.Context, url string) ([]byte, error) {
 }
 
 func (ba *BitbucketApi) ListPermission(ctx context.Context, workspace, repository string) ([]Permission, error) {
-	endpoint, err := url.Parse(ba.baseUrl)
+	res, err := ba.do(ctx, fmt.Sprintf(endpointPermissionConfigGroups, workspace, repository), "GET", nil)
 	if err != nil {
 		return nil, err
 	}
-	endpoint = endpoint.JoinPath("repositories", workspace, repository, "permissions-config")
-
-	endpointPermissionGroup := endpoint.JoinPath("groups")
-	res, err := ba.do(ctx, endpointPermissionGroup.String())
-	if err != nil {
-		return nil, err
-	}
-	var groupPermission values[repositoryPermissionGroup]
+	var groupPermission response[repositoryPermissionGroup]
 	err = json.Unmarshal(res, &groupPermission)
 	if err != nil {
 		return nil, err
 	}
-
-	endpointPermissionUser := endpoint.JoinPath("users")
-	res, err = ba.do(ctx, endpointPermissionUser.String())
+	res, err = ba.do(ctx, fmt.Sprintf(endpointPermissionConfigUsers, workspace, repository), "GET", nil)
 	if err != nil {
 		return nil, err
 	}
-	var userPermission values[repositoryPermissionUser]
+	var userPermission response[repositoryPermissionUser]
 	err = json.Unmarshal(res, &userPermission)
 	if err != nil {
 		return nil, err
