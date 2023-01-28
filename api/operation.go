@@ -21,9 +21,9 @@ type Operation struct {
 type OperationType string
 
 const (
-	OperationTypeAdd    = "add"
-	OperationTypeRemove = "remove"
-	OperationTypeUpdate = "update"
+	OperationTypeAdd    OperationType = "add"
+	OperationTypeRemove OperationType = "remove"
+	OperationTypeUpdate OperationType = "update"
 )
 
 func NewAddOperation(p Permission) Operation {
