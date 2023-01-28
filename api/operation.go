@@ -7,11 +7,11 @@ import (
 )
 
 type Operation struct {
-	objectId         string
-	objectName       string
-	objectType       ObjectType
-	permissionBefore PermissionType
-	permissionAfter  PermissionType
+	objectId          string
+	objectName        string
+	objectType        ObjectType
+	permissionCurrent PermissionType
+	permissionAfter   PermissionType
 
 	add    bool
 	remove bool
@@ -26,15 +26,34 @@ const (
 	OperationTypeUpdate = "update"
 )
 
-func NewOperationFromPermission(p Permission, operationType OperationType) Operation {
+func NewAddOperation(p Permission) Operation {
 	return Operation{
 		objectId:        p.ObjectId,
 		objectName:      p.ObjectName,
 		objectType:      p.ObjectType,
-		permissionAfter: p.Permission,
-		add:             operationType == OperationTypeAdd,
-		remove:          operationType == OperationTypeRemove,
-		update:          operationType == OperationTypeUpdate,
+		permissionAfter: p.PermissionType,
+		add:             true,
+	}
+}
+
+func NewRemoveOperation(p Permission) Operation {
+	return Operation{
+		objectId:          p.ObjectId,
+		objectName:        p.ObjectName,
+		objectType:        p.ObjectType,
+		permissionCurrent: p.PermissionType,
+		remove:            true,
+	}
+}
+
+func NewUpdateOperation(p Permission, permissionAfter PermissionType) Operation {
+	return Operation{
+		objectId:          p.ObjectId,
+		objectName:        p.ObjectName,
+		objectType:        p.ObjectType,
+		permissionCurrent: p.PermissionType,
+		permissionAfter:   permissionAfter,
+		update:            true,
 	}
 }
 
@@ -45,11 +64,11 @@ func (o Operation) Same() bool {
 func (o Operation) Message() string {
 	switch {
 	case o.update:
-		return fmt.Sprintf("Update: %s %s %s => %s", o.objectType, o.objectName, strings.ToUpper(string(o.permissionBefore)), strings.ToUpper(string(o.permissionAfter)))
+		return fmt.Sprintf("Update: %s %s %s => %s", o.objectType, o.objectName, strings.ToUpper(string(o.permissionCurrent)), strings.ToUpper(string(o.permissionAfter)))
 	case o.add:
 		return fmt.Sprintf("Add: %s %s (%s)", o.objectType, o.objectName, strings.ToUpper(string(o.permissionAfter)))
 	case o.remove:
-		return fmt.Sprintf("Remove: %s %s (%s)", o.objectType, o.objectName, strings.ToUpper(string(o.permissionBefore)))
+		return fmt.Sprintf("Remove: %s %s (%s)", o.objectType, o.objectName, strings.ToUpper(string(o.permissionCurrent)))
 	default:
 		return fmt.Sprintf("Same: %s %s (%s)", o.objectType, o.objectName, strings.ToUpper(string(o.permissionAfter)))
 	}
@@ -70,21 +89,20 @@ func MakeOperationList(srcPermissions, targetPermissions []Permission) []Operati
 	for k, vs := range srcPermissionsMap {
 		if vt, ok := targetPermissionsMap[k]; ok {
 			operations[k] = Operation{
-				objectId:         vs.ObjectId,
-				objectName:       vs.ObjectName,
-				objectType:       vs.ObjectType,
-				permissionBefore: vt.Permission,
-				permissionAfter:  vs.Permission,
-				update:           vt.Permission != vs.Permission,
+				objectId:          vs.ObjectId,
+				objectName:        vs.ObjectName,
+				objectType:        vs.ObjectType,
+				permissionCurrent: vt.PermissionType,
+				permissionAfter:   vs.PermissionType,
+				update:            vt.PermissionType != vs.PermissionType,
 			}
 		} else {
 			operations[k] = Operation{
-				objectId:         vs.ObjectId,
-				objectName:       vs.ObjectName,
-				objectType:       vs.ObjectType,
-				permissionBefore: "",
-				permissionAfter:  vs.Permission,
-				add:              true,
+				objectId:        vs.ObjectId,
+				objectName:      vs.ObjectName,
+				objectType:      vs.ObjectType,
+				permissionAfter: vs.PermissionType,
+				add:             true,
 			}
 		}
 	}
@@ -94,12 +112,11 @@ func MakeOperationList(srcPermissions, targetPermissions []Permission) []Operati
 		}
 		if _, ok := srcPermissionsMap[k]; !ok {
 			operations[k] = Operation{
-				objectId:         vt.ObjectId,
-				objectName:       vt.ObjectName,
-				objectType:       vt.ObjectType,
-				permissionBefore: vt.Permission,
-				permissionAfter:  "",
-				remove:           true,
+				objectId:          vt.ObjectId,
+				objectName:        vt.ObjectName,
+				objectType:        vt.ObjectType,
+				permissionCurrent: vt.PermissionType,
+				remove:            true,
 			}
 		}
 	}

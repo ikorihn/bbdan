@@ -57,10 +57,10 @@ const (
 )
 
 type Permission struct {
-	ObjectId   string
-	ObjectName string
-	ObjectType ObjectType
-	Permission PermissionType
+	ObjectId       string
+	ObjectName     string
+	ObjectType     ObjectType
+	PermissionType PermissionType
 }
 
 // APIレスポンス
@@ -75,6 +75,7 @@ type errorField struct {
 	Message string            `json:"message"`
 }
 
+// response 正常レスポンス
 type response[T any] struct {
 	Values  []T     `json:"values"`
 	Pagelen int     `json:"pagelen"`
@@ -173,10 +174,10 @@ func (ba *BitbucketApi) ListGroupPermission(ctx context.Context, workspace, repo
 
 		for _, v := range groupPermission.Values {
 			p := Permission{
-				ObjectId:   v.Group.Slug,
-				ObjectName: v.Group.Name,
-				ObjectType: ObjectType(v.Group.Type),
-				Permission: PermissionType(v.Permission),
+				ObjectId:       v.Group.Slug,
+				ObjectName:     v.Group.Name,
+				ObjectType:     ObjectType(v.Group.Type),
+				PermissionType: PermissionType(v.Permission),
 			}
 			permissions = append(permissions, p)
 		}
@@ -211,10 +212,10 @@ func (ba *BitbucketApi) ListUserPermission(ctx context.Context, workspace, repos
 
 		for _, v := range userPermission.Values {
 			p := Permission{
-				ObjectId:   v.User.Uuid,
-				ObjectName: v.User.Nickname,
-				ObjectType: ObjectType(v.User.Type),
-				Permission: PermissionType(v.Permission),
+				ObjectId:       v.User.Uuid,
+				ObjectName:     v.User.Nickname,
+				ObjectType:     ObjectType(v.User.Type),
+				PermissionType: PermissionType(v.Permission),
 			}
 			permissions = append(permissions, p)
 		}

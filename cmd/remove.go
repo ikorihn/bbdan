@@ -41,7 +41,7 @@ var removeCmd = &cobra.Command{
 
 		operations := []api.Operation{}
 		for _, v := range permissions {
-			o := api.NewOperationFromPermission(v, api.OperationTypeRemove)
+			o := api.NewRemoveOperation(v)
 			operations = append(operations, o)
 		}
 

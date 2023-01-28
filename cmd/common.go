@@ -22,7 +22,7 @@ func showPermissions(ba *api.BitbucketApi, workspace, repository string) {
 			v.ObjectType,
 			v.ObjectId,
 			v.ObjectName,
-			v.Permission,
+			v.PermissionType,
 		)
 	}
 
