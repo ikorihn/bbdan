@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 const urlBitbucketApi = "https://api.bitbucket.org/2.0"
@@ -114,6 +115,8 @@ func (ba BitbucketApi) do(ctx context.Context, endpoint, method string, body io.
 		return nil, err
 	}
 
+	fmt.Printf("request to %s\n", u.String())
+
 	req, err := http.NewRequestWithContext(ctx, method, u.String(), body)
 	if err != nil {
 		return nil, err
@@ -153,46 +156,94 @@ func (ba BitbucketApi) do(ctx context.Context, endpoint, method string, body io.
 	return b, nil
 }
 
-// ListPermission gets permissions for a repository.
-func (ba *BitbucketApi) ListPermission(ctx context.Context, workspace, repository string) ([]Permission, error) {
-	res, err := ba.do(ctx, fmt.Sprintf(endpointPermissionConfigGroups, workspace, repository), "GET", nil)
-	if err != nil {
-		return nil, err
-	}
-	var groupPermission response[repositoryPermissionGroup]
-	err = json.Unmarshal(res, &groupPermission)
-	if err != nil {
-		return nil, err
-	}
-	res, err = ba.do(ctx, fmt.Sprintf(endpointPermissionConfigUsers, workspace, repository), "GET", nil)
-	if err != nil {
-		return nil, err
-	}
-	var userPermission response[repositoryPermissionUser]
-	err = json.Unmarshal(res, &userPermission)
-	if err != nil {
-		return nil, err
+// ListGroupPermission gets group permissions for a repository.
+func (ba *BitbucketApi) ListGroupPermission(ctx context.Context, workspace, repository string) ([]Permission, error) {
+	permissions := make([]Permission, 0)
+	next := fmt.Sprintf(endpointPermissionConfigGroups, workspace, repository)
+	for next != "" {
+		res, err := ba.do(ctx, next, "GET", nil)
+		if err != nil {
+			return nil, err
+		}
+		var groupPermission response[repositoryPermissionGroup]
+		err = json.Unmarshal(res, &groupPermission)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range groupPermission.Values {
+			p := Permission{
+				ObjectId:   v.Group.Slug,
+				ObjectName: v.Group.Name,
+				ObjectType: ObjectType(v.Group.Type),
+				Permission: PermissionType(v.Permission),
+			}
+			permissions = append(permissions, p)
+		}
+
+		if groupPermission.Next != nil {
+			next = *groupPermission.Next
+			next = strings.TrimPrefix(next, ba.baseUrl)
+		} else {
+			next = ""
+		}
 	}
 
+	return permissions, nil
+}
+
+// ListUserPermission gets group permissions for a repository.
+func (ba *BitbucketApi) ListUserPermission(ctx context.Context, workspace, repository string) ([]Permission, error) {
 	permissions := make([]Permission, 0)
-	for _, v := range groupPermission.Values {
-		p := Permission{
-			ObjectId:   v.Group.Slug,
-			ObjectName: v.Group.Name,
-			ObjectType: ObjectType(v.Group.Type),
-			Permission: PermissionType(v.Permission),
+
+	next := fmt.Sprintf(endpointPermissionConfigUsers, workspace, repository)
+
+	for next != "" {
+		res, err := ba.do(ctx, fmt.Sprintf(endpointPermissionConfigUsers, workspace, repository), "GET", nil)
+		if err != nil {
+			return nil, err
 		}
-		permissions = append(permissions, p)
-	}
-	for _, v := range userPermission.Values {
-		p := Permission{
-			ObjectId:   v.User.Uuid,
-			ObjectName: v.User.Nickname,
-			ObjectType: ObjectType(v.User.Type),
-			Permission: PermissionType(v.Permission),
+		var userPermission response[repositoryPermissionUser]
+		err = json.Unmarshal(res, &userPermission)
+		if err != nil {
+			return nil, err
 		}
-		permissions = append(permissions, p)
+
+		for _, v := range userPermission.Values {
+			p := Permission{
+				ObjectId:   v.User.Uuid,
+				ObjectName: v.User.Nickname,
+				ObjectType: ObjectType(v.User.Type),
+				Permission: PermissionType(v.Permission),
+			}
+			permissions = append(permissions, p)
+		}
+
+		if userPermission.Next != nil {
+			next = *userPermission.Next
+			next = strings.TrimPrefix(next, ba.baseUrl)
+		} else {
+			next = ""
+		}
 	}
+
+	return permissions, nil
+}
+
+// ListPermission gets permissions for a repository.
+func (ba *BitbucketApi) ListPermission(ctx context.Context, workspace, repository string) ([]Permission, error) {
+	permissions := make([]Permission, 0)
+
+	groupPermission, err := ba.ListGroupPermission(ctx, workspace, repository)
+	if err != nil {
+		return nil, err
+	}
+	userPermission, err := ba.ListUserPermission(ctx, workspace, repository)
+	if err != nil {
+		return nil, err
+	}
+	permissions = append(permissions, groupPermission...)
+	permissions = append(permissions, userPermission...)
 
 	return permissions, nil
 
