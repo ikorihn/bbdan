@@ -184,7 +184,7 @@ func (ba *BitbucketApi) ListGroupPermission(ctx context.Context, workspace, repo
 
 		if groupPermission.Next != nil {
 			next = *groupPermission.Next
-			next = strings.TrimPrefix(next, ba.baseUrl)
+			next = strings.TrimPrefix(next, urlBitbucketApi)
 		} else {
 			next = ""
 		}
@@ -200,7 +200,7 @@ func (ba *BitbucketApi) ListUserPermission(ctx context.Context, workspace, repos
 	next := fmt.Sprintf(endpointPermissionConfigUsers, workspace, repository)
 
 	for next != "" {
-		res, err := ba.do(ctx, fmt.Sprintf(endpointPermissionConfigUsers, workspace, repository), "GET", nil)
+		res, err := ba.do(ctx, next, "GET", nil)
 		if err != nil {
 			return nil, err
 		}
@@ -222,7 +222,7 @@ func (ba *BitbucketApi) ListUserPermission(ctx context.Context, workspace, repos
 
 		if userPermission.Next != nil {
 			next = *userPermission.Next
-			next = strings.TrimPrefix(next, ba.baseUrl)
+			next = strings.TrimPrefix(next, urlBitbucketApi)
 		} else {
 			next = ""
 		}

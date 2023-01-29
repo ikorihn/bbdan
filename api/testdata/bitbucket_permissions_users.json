@@ -1,0 +1,40 @@
+{
+  "values": [
+    {
+      "type": "repository_user_permission",
+      "permission": "admin",
+      "user": {
+        "display_name": "John Doe",
+        "type": "user",
+        "uuid": "{1234-fddd-5678-a111}",
+        "account_id": "555555:66666666-8888-aaaa",
+        "nickname": "john-doe"
+      }
+    },
+    {
+      "type": "repository_user_permission",
+      "permission": "write",
+      "user": {
+        "display_name": "operator 1",
+        "type": "user",
+        "uuid": "{aaaa-bbbb-1234-cdef}",
+        "account_id": "555555:aaaa-bbbb-1234-cdef",
+        "nickname": "operator-1"
+      }
+    },
+    {
+      "type": "repository_user_permission",
+      "permission": "read",
+      "user": {
+        "display_name": "reader 1",
+        "type": "user",
+        "uuid": "{9999-9999-9999-9999}",
+        "account_id": "555555:9999-9999-9999-9999",
+        "nickname": "reader-1"
+      }
+    }
+  ],
+  "pagelen": 3,
+  "size": 2,
+  "page": 1
+}

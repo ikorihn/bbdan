@@ -1,0 +1,46 @@
+{
+  "values": [
+    {
+      "type": "repository_group_permission",
+      "permission": "read",
+      "group": {
+        "type": "group",
+        "slug": "abcdef1234",
+        "full_slug": "myworkspace:abcdef1234",
+        "name": "my-group_abcdef1234",
+        "default_permission": null,
+        "email_forwarding_disabled": false,
+        "account_privilege": null
+      }
+    },
+    {
+      "type": "repository_group_permission",
+      "permission": "admin",
+      "group": {
+        "type": "group",
+        "slug": "administrator",
+        "full_slug": "myworkspace:administrator",
+        "name": "administrator",
+        "default_permission": null,
+        "email_forwarding_disabled": false,
+        "account_privilege": null
+      }
+    },
+    {
+      "type": "repository_group_permission",
+      "permission": "write",
+      "group": {
+        "type": "group",
+        "slug": "developer",
+        "full_slug": "myworkspace:developer",
+        "name": "developer",
+        "default_permission": null,
+        "email_forwarding_disabled": false,
+        "account_privilege": null
+      }
+    }
+  ],
+  "pagelen": 3,
+  "size": 50,
+  "page": 1
+}
