@@ -29,11 +29,16 @@ func showPermissions(ba *api.BitbucketApi, workspace, repository string) {
 }
 
 func askOperation(operations []api.Operation) ([]api.Operation, error) {
-	messages := make([]string, 0)
+	notSame := make([]api.Operation, 0)
 	for _, v := range operations {
 		if !v.Same() {
-			messages = append(messages, v.Message())
+			notSame = append(notSame, v)
 		}
+	}
+
+	messages := make([]string, 0)
+	for _, v := range notSame {
+		messages = append(messages, v.Message())
 	}
 	selectedIdx, err := multiSelect("Choose operations:", messages)
 	if err != nil {
@@ -42,7 +47,7 @@ func askOperation(operations []api.Operation) ([]api.Operation, error) {
 
 	selectedOperations := make([]api.Operation, 0)
 	for _, v := range selectedIdx {
-		selectedOperations = append(selectedOperations, operations[v])
+		selectedOperations = append(selectedOperations, notSame[v])
 	}
 
 	return selectedOperations, nil

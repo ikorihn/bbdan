@@ -70,15 +70,13 @@ var updateCmd = &cobra.Command{
 			operations = append(operations, o)
 		}
 
-		fmt.Printf("%+v\n", operations)
+		err = ba.UpdatePermissions(ctx, workspace, repository, operations)
+		if err != nil {
+			fmt.Printf("Failed to update: %v\n", err)
+			return err
+		}
 
-		// err = ba.UpdatePermissions(ctx, workspace, repository, operations)
-		// if err != nil {
-		// 	fmt.Printf("Failed to update: %v\n", err)
-		// 	return err
-		// }
-
-		// showPermissions(ba, workspace, repository)
+		showPermissions(ba, workspace, repository)
 
 		return nil
 	},
