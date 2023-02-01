@@ -21,16 +21,6 @@ var removeCmd = &cobra.Command{
 
 		hc := http.DefaultClient
 
-		username, err := cmd.Flags().GetString("username")
-		if err != nil {
-			fmt.Printf("%v", err)
-			return err
-		}
-		password, err := cmd.Flags().GetString("password")
-		if err != nil {
-			fmt.Printf("%v", err)
-			return err
-		}
 		ba := api.NewBitbucketApi(hc, username, password)
 		ctx := context.Background()
 		permissions, err := ba.ListPermission(ctx, workspace, repository)

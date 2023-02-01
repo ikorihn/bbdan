@@ -1,6 +1,3 @@
-/*
-Copyright © 2023 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
@@ -24,16 +21,6 @@ var copyCmd = &cobra.Command{
 		fmt.Printf("Copy permissions from %s/%s to %s/%s\n", workspace, srcRepository, workspace, targetRepository)
 
 		hc := http.DefaultClient
-		username, err := cmd.Flags().GetString("username")
-		if err != nil {
-			fmt.Printf("%v", err)
-			return err
-		}
-		password, err := cmd.Flags().GetString("password")
-		if err != nil {
-			fmt.Printf("%v", err)
-			return err
-		}
 		ba := api.NewBitbucketApi(hc, username, password)
 
 		ctx := context.Background()
