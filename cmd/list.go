@@ -20,14 +20,6 @@ var listCmd = &cobra.Command{
 
 		hc := http.DefaultClient
 
-		username, err := cmd.Flags().GetString("username")
-		if err != nil {
-			return err
-		}
-		password, err := cmd.Flags().GetString("password")
-		if err != nil {
-			return err
-		}
 		ba := api.NewBitbucketApi(hc, username, password)
 		showPermissions(ba, workspace, repository)
 
