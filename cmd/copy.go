@@ -35,9 +35,16 @@ var copyCmd = &cobra.Command{
 		}
 
 		operations := api.MakeOperationList(srcPermissions, targetPermissions)
-		selectedOperations, err := askOperation(operations)
-		if err != nil {
-			return err
+
+		var selectedOperations []api.Operation
+		batch, _ := cmd.Flags().GetBool("batch")
+		if batch {
+			selectedOperations = operations
+		} else {
+			selectedOperations, err = askOperation(operations)
+			if err != nil {
+				return err
+			}
 		}
 
 		err = ba.UpdatePermissions(ctx, workspace, targetRepository, selectedOperations)
@@ -53,4 +60,5 @@ var copyCmd = &cobra.Command{
 
 func init() {
 	permissionCmd.AddCommand(copyCmd)
+	copyCmd.LocalFlags().BoolP("batch", "b", false, "Execute in batch mode. Copy all without asking")
 }
