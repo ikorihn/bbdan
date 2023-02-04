@@ -63,9 +63,8 @@ type Permission struct {
 	PermissionType PermissionType
 }
 
-// APIレスポンス
+// Response from Bitbucket API
 
-// errorResponse
 type errorResponse struct {
 	Type  string     `json:"type"`
 	Error errorField `json:"error"`
@@ -75,7 +74,7 @@ type errorField struct {
 	Message string            `json:"message"`
 }
 
-// response 正常レスポンス
+// response is successful response that has values(list of object)
 type response[T any] struct {
 	Values  []T     `json:"values"`
 	Pagelen int     `json:"pagelen"`
