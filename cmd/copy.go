@@ -39,7 +39,11 @@ var copyCmd = &cobra.Command{
 		var selectedOperations []api.Operation
 		batch, _ := cmd.Flags().GetBool("batch")
 		if batch {
-			selectedOperations = operations
+			for _, v := range operations {
+				if !v.Same() {
+					selectedOperations = append(selectedOperations, v)
+				}
+			}
 		} else {
 			selectedOperations, err = askOperation(operations)
 			if err != nil {
@@ -60,5 +64,5 @@ var copyCmd = &cobra.Command{
 
 func init() {
 	permissionCmd.AddCommand(copyCmd)
-	copyCmd.LocalFlags().BoolP("batch", "b", false, "Execute in batch mode. Copy all without asking")
+	copyCmd.PersistentFlags().BoolP("batch", "b", false, "Execute in batch mode. Copy all without asking")
 }
