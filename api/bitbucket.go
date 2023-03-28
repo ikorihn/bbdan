@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 )
 
 const urlBitbucketApi = "https://api.bitbucket.org/2.0"
@@ -19,6 +20,7 @@ const (
 	endpointPermissionConfigUser   = "/repositories/%s/%s/permissions-config/users/%s"
 	endpointPermissionConfigGroup  = "/repositories/%s/%s/permissions-config/groups/%s"
 	endpointDefaultReviewers       = "/repositories/%s/%s/default-reviewers"
+	endpointDefaultReviewer        = "/repositories/%s/%s/default-reviewers/%s"
 )
 
 type BitbucketApi struct {
@@ -332,3 +334,44 @@ func (ba *BitbucketApi) ListDefaultReviewers(ctx context.Context, workspace, rep
 	return accounts, nil
 }
 
+// DeleteDefaultReviewers deletes default reviewers for a repository.
+// - reviewers: list of the username or the UUID
+func (ba *BitbucketApi) DeleteDefaultReviewers(ctx context.Context, workspace, repository string, reviewers []string) ([]Account, error) {
+	accounts := make([]Account, 0)
+
+	var wg sync.WaitGroup
+	for _, cv := range reviewers {
+		wg.Add(1)
+		go func(reviewer string) {
+			defer wg.Done()
+
+			u := fmt.Sprintf(endpointDefaultReviewer, workspace, repository, reviewer)
+			ba.do(ctx, u, "DELETE", nil)
+		}(cv)
+	}
+
+	wg.Wait()
+
+	return accounts, nil
+}
+
+// AddDefaultReviewers adds default reviewers for a repository.
+// - reviewers: list of the username or the UUID
+func (ba *BitbucketApi) AddDefaultReviewers(ctx context.Context, workspace, repository string, reviewers []string) ([]Account, error) {
+	accounts := make([]Account, 0)
+
+	var wg sync.WaitGroup
+	for _, cv := range reviewers {
+		wg.Add(1)
+		go func(reviewer string) {
+			defer wg.Done()
+
+			u := fmt.Sprintf(endpointDefaultReviewer, workspace, repository, reviewer)
+			ba.do(ctx, u, "PUT", nil)
+		}(cv)
+	}
+
+	wg.Wait()
+
+	return accounts, nil
+}
