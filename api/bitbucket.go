@@ -18,6 +18,7 @@ const (
 	endpointPermissionConfigGroups = "/repositories/%s/%s/permissions-config/groups"
 	endpointPermissionConfigUser   = "/repositories/%s/%s/permissions-config/users/%s"
 	endpointPermissionConfigGroup  = "/repositories/%s/%s/permissions-config/groups/%s"
+	endpointDefaultReviewers       = "/repositories/%s/%s/default-reviewers"
 )
 
 type BitbucketApi struct {
@@ -61,6 +62,12 @@ type Permission struct {
 	ObjectName     string
 	ObjectType     ObjectType
 	PermissionType PermissionType
+}
+
+type Account struct {
+	Uuid        string `json:"uuid"`
+	Nickname    string `json:"nickname"`
+	DisplayName string `json:"display_name"`
 }
 
 // Response from Bitbucket API
@@ -287,3 +294,41 @@ func (ba *BitbucketApi) UpdatePermissions(ctx context.Context, workspace, reposi
 	}
 	return nil
 }
+
+// ListDefaultReviewers gets default reviewers for a repository.
+func (ba *BitbucketApi) ListDefaultReviewers(ctx context.Context, workspace, repository string) ([]Account, error) {
+	accounts := make([]Account, 0)
+
+	next := fmt.Sprintf(endpointDefaultReviewers, workspace, repository)
+
+	for next != "" {
+		res, err := ba.do(ctx, next, "GET", nil)
+		if err != nil {
+			return nil, err
+		}
+		var user response[bitbucketUser]
+		err = json.Unmarshal(res, &user)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range user.Values {
+			a := Account{
+				Uuid:        v.Uuid,
+				Nickname:    v.Nickname,
+				DisplayName: v.DisplayName,
+			}
+			accounts = append(accounts, a)
+		}
+
+		if user.Next != nil {
+			next = *user.Next
+			next = strings.TrimPrefix(next, urlBitbucketApi)
+		} else {
+			next = ""
+		}
+	}
+
+	return accounts, nil
+}
+
